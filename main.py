@@ -12,12 +12,13 @@ API_TOKEN = '7656064742:AAEd96MqdecxAd0nZcuqRJDmCWvLXbMp17U'
 
 bot = telebot.TeleBot(API_TOKEN)
 
+with open('./help.txt', 'r', encoding='UTF-8') as help_file:
+    help_text = help_file.readlines()
+    help_text = ''.join(help_text)
+
 # Handle '/start' and '/help'
 @bot.message_handler(commands=['help', 'start'])
 def send_welcome(message):
-    with open('./help.txt', 'r', encoding='UTF-8') as help_file:
-        help_text = help_file.readlines()
-        help_text = ''.join(help_text)
     bot.reply_to(message, help_text, parse_mode='Markdown')
 
 def parse_args(*args):
@@ -72,7 +73,10 @@ def roll(
     if complications:
         result += f'\nПолучено затруднений: {complications}'
 
-    result += f'\n\nПорог: {treshold}, Криты: {crit_value}, Сложность: {difficulty}\n{rolls}'
+    result += f'\n\nПорог: {treshold}, Криты: {crit_value}'
+    if difficulty:
+        result += f', Сложность: {difficulty}'
+    result += f'\n{rolls}'
     return result
 
 
@@ -84,10 +88,10 @@ def query_text(inline_query):
     except Exception as e:
         print(e)
 
-@bot.inline_handler(lambda query: len(query.query) > 0 and query.query == 'help')
+@bot.inline_handler(lambda query: len(query.query) > 0 and query.query.lower() == 'help')
 def query_text(inline_query):
     try:
-        r = types.InlineQueryResultArticle('1', 'Help', types.InputTextMessageContent('/help'), description='Get help')
+        r = types.InlineQueryResultArticle('1', 'Help', types.InputTextMessageContent(help_text, parse_mode='Markdown'), description='Get help')
         bot.answer_inline_query(inline_query.id, [r], cache_time=0)
     except Exception as e:
         print(e)
