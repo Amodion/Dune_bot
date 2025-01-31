@@ -106,8 +106,6 @@ def roll_dices_query(query):
 @bot.message_handler(commands=['roll'])
 def roll_dices(message):
     args = message.text.split()[1:]
-    if not args:
-        bot.reply_to(message, 'Укажи как минимум порог успеха!')
     try:
         result = roll(**parse_args(*args))
     except:
