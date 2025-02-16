@@ -14,9 +14,9 @@ proxy_url = "http://proxy.server:3128"
 
 apihelper.proxy = {'http': proxy_url, 'https': proxy_url}
 
-secret = '7e7cc1af-4795-4c5c-b8cf-e93ddc2c091b'
+secret = os.getenv("SECRET")
 
-API_TOKEN = '7656064742:AAEd96MqdecxAd0nZcuqRJDmCWvLXbMp17U'
+API_TOKEN = os.getenv("API_TOKEN")
 
 bot = TeleBot(API_TOKEN, threaded=False)
 bot.set_webhook(url="https://Amodion.pythonanywhere.com/{}".format(secret), max_connections=1)
@@ -24,20 +24,17 @@ bot.set_webhook(url="https://Amodion.pythonanywhere.com/{}".format(secret), max_
 
 app = Flask(__name__)
 
-#my_dir = os.path.dirname(__file__)
-#help_file_path = os.path.join(my_dir, 'help.txt')
-
+# Загрузка текста help
 with open('/home/Amodion/dunebotwebhook/help.txt', 'r', encoding='UTF-8') as help_file:
     help_text = help_file.readlines()
     help_text = ''.join(help_text)
 
+# Обработка обращенй к боту
 @app.route('/{}'.format(secret), methods=["POST"])
 def webhook():
     if request.headers.get('content-type') == 'application/json':
         json_string = request.get_data().decode('utf-8')
-        #print(json_string)
         update = telebot.types.Update.de_json(json_string)
-        #print(update)
         bot.process_new_updates([update])
         return ''
     else:
@@ -49,7 +46,7 @@ def webhook():
 def send_welcome(message):
     bot.reply_to(message, help_text, parse_mode='Markdown')
 
-
+# Обработка команды для броска в строке
 @bot.inline_handler(lambda query: len(query.query) > 0 and query.query[0].isdigit())
 def query_text(inline_query):
     try:
@@ -58,6 +55,7 @@ def query_text(inline_query):
     except Exception as e:
         print(e)
 
+# Обработка команды help в строке
 @bot.inline_handler(lambda query: len(query.query) > 0 and query.query.lower() == 'help')
 def query_text(inline_query):
     try:
@@ -66,25 +64,26 @@ def query_text(inline_query):
     except Exception as e:
         print(e)
 
+# Запусает бросок кубиков для запроса в строке
 def roll_dices_query(query):
     args = query.query.split()
     result = roll(**parse_args(*args))
-    #result = parse_args(*args)
     return result
 
 
+# Обрабатывает обычную команду /roll
 @bot.message_handler(commands=['roll'])
 def roll_dices(message):
     print('Roll command get text: ', message.text)
     if message.text:
         args = message.text.split()[1:]
         result = roll(**parse_args(*args))
-    #result = parse_args(*args)
         bot.reply_to(message, result, parse_mode='Markdown')
 
+# Парсит аргемнты для броска кубиков. Валидация тут? Pydantic?
 def parse_args(*args):
     '''
-    /roll treshold cX nY dZ rV
+    /roll treshold cX nY dZ rV ! - расшифровка в help.txt
     '''
     d = {'treshold': int(args[0])}
     for arg in args[1:]:
@@ -101,6 +100,7 @@ def parse_args(*args):
     return d
 
 # TODO: Сделать Roll классом
+# Делает бросок и возвращает сообщение с резульататми
 def roll(
     treshold: int,
     n_dices: int = 2,
@@ -137,6 +137,6 @@ def roll(
     result += f'\n\nПорог: {treshold}, Криты на: {crit_value}'
     if difficulty:
         result += f', Сложность: {difficulty}'
-    result += f'\n{rolls}'
+    result += f'\nБросок: [{rolls}]'
     return result
 
