@@ -57,7 +57,7 @@ def query_text(inline_query):
 
 # Обработка команды help в строке
 @bot.inline_handler(lambda query: len(query.query) > 0 and query.query.lower() == 'help')
-def query_text(inline_query):
+def query_text_help(inline_query):
     try:
         r = types.InlineQueryResultArticle('1', 'Help', types.InputTextMessageContent(help_text, parse_mode='Markdown'), description='Get help')
         bot.answer_inline_query(inline_query.id, [r], cache_time=0)
