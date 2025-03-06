@@ -50,7 +50,8 @@ def send_welcome(message):
 @bot.inline_handler(lambda query: len(query.query) > 0 and query.query[0].isdigit())
 def query_text(inline_query):
     try:
-        r = types.InlineQueryResultArticle('1', 'Roll', types.InputTextMessageContent(roll_dices_query(inline_query), parse_mode='Markdown'), description=inline_query.query)
+        description = description_from_query(inline_query)
+        r = types.InlineQueryResultArticle('1', 'Roll', types.InputTextMessageContent(roll_dices_query(inline_query), parse_mode='Markdown'), description=description)
         bot.answer_inline_query(inline_query.id, [r], cache_time=0)
     except Exception as e:
         print(e)
@@ -70,6 +71,38 @@ def roll_dices_query(query):
     result = roll(**parse_args(*args))
     return result
 
+# Создание подсказок при создании запроса
+def description_from_query(query):
+    args = query.query.split()
+    d = parse_args(*args)
+
+    description = f'Порог успеха: {d["treshold"]}; '
+    if 'crit_value' in d.keys():
+        description += f'Криты на: {d["crit_value"]}; '
+    else:
+        description += 'c - криты; '
+    
+    if 'n_dices' in d.keys():
+        description += f'Число кубиков: {d["n_dices"]}; '
+    else:
+        description += 'n - число кубиков; '
+    
+    if 'difficulty' in d.keys():
+        description += f'Сложность: {d["difficulty"]}; '
+    else:
+        description += 'd - Сложность; '
+    
+    if 'complications_range' in d.keys():
+        description += f'Затруднения на: {d["complications_range"]}; '
+    else:
+        description += 'r - затруднения; '
+
+    if 'use_determination' in d.keys():
+        description += f'Потрачена Решимость'
+    else:
+        description += f'! - Решимость'
+
+    return description
 
 # Обрабатывает обычную команду /roll
 @bot.message_handler(commands=['roll'])
