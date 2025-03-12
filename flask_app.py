@@ -156,7 +156,7 @@ def roll(
         elif result >= complications_range:
             complications += 1
     result = f'*Успехов: {successes}!*'
-    if difficulty:
+    if type(difficulty) is int:
         if successes >= difficulty:
             result += '\n*ПРОЙДЕНО!*'
             momentum = successes - difficulty
@@ -164,11 +164,13 @@ def roll(
                 result += f'\nСоздано Очков Импульса: {momentum}'
         else:
             result += '\n*ПРОВАЛ!*'
+            if difficulty >= 3:
+                result += '\nПолучи 1 Очко Развития!'
     if complications:
         result += f'\nПолучено затруднений: {complications}'
 
     result += f'\n\nПорог: {treshold}, Криты на: {crit_value}'
-    if difficulty:
+    if type(difficulty) is int:
         result += f', Сложность: {difficulty}'
     result += f'\nБросок: [{rolls}]'
     return result
