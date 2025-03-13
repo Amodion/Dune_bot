@@ -125,7 +125,7 @@ def parse_args(*args):
         if 'n' in arg:
             d['n_dices'] = int(arg[1:])
         if 'd' in arg:
-            d['difficulty'] = int(arg[1:])
+            d['difficulty'] = max(0, int(arg[1:])) # Сложность не ниже 0!
         if 'r' in arg:
             d['complications_range'] = int(arg[1:])
         if '!' in arg:
@@ -153,7 +153,8 @@ def roll(
             successes += 2
         elif result <= treshold:
             successes += 1
-        elif result >= complications_range:
+        
+        if result >= complications_range: # Обрабатывать кубик на затруднение в любом случае. Возможность пересечения ПГ и ДЗ.
             complications += 1
     result = f'*Успехов: {successes}!*'
     if type(difficulty) is int:
