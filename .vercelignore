@@ -1,0 +1,10 @@
+.git/
+.pytest_cache/
+**/__pycache__/
+*.pyc
+*.egg-info/
+tests/
+notebooks/
+docs/
+docker-compose.yml
+src/Dockerfile

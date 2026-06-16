@@ -5,3 +5,4 @@ __pycache__/
 logs/
 .vercel/
 *.egg-info/
+notebooks/
