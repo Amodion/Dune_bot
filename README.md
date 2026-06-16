@@ -1,84 +1,113 @@
 # ДюнаБот
 
-## Описание
+FastAPI Telegram webhook service for **Дюна: Приключения в Империи** dice rolls.
 
-Это телеграм бот, написанный с помощью библиотеки telebot и развернут через Flask с хостом на pythonanywhere.com
+The old Flask/telebot PythonAnywhere app has been replaced with an async FastAPI app using `python-telegram-bot`. Game logic and legacy text syntax are preserved, and `/roll` now also opens a button-based roll wizard.
 
-Он создан для текстовой игры в телеграме по системе **Дюна: Приключения в Империи**
+## Bot Usage
 
-## Приминение
+- `/start` or `/help` sends help.
+- `/roll` opens the interactive keyboard.
+- `/roll 15 n4 c6 d3 r18 !` rolls from text.
+- Inline mode still works: `@duneTTRPG_bot 15 n4 c6 d3 r18 !`.
+- Inline help still works: `@duneTTRPG_bot help`.
 
-Я работаю прямо из строки!
+Legacy syntax:
 
-Для работы из строки напиши "**@duneTTRPG_bot**". Дальше начни писать запрос как описано ниже.
-И в появившемся окне выбери вариант Roll.
+```text
+@duneTTRPG_bot T nX cY dZ rV !
+```
 
-А вот как создавать запрос:
+- `T` - порог успеха
+- `X` - число кубиков, default `2`
+- `Y` - критический успех, default `1`
+- `Z` - сложность проверки
+- `V` - затруднения, default `20`
+- `!` - потрачена Решимость
 
-Основная команда всегда начинается на число, обычно от 8 до 16 - это порог успеха.
+## Environment
 
-Просто напиши так "@duneTTRPG_bot 13" и бот скажет, сколько ты получил успехов!
-Это обязательный минимум, но можно после добавить еще параметры в произвольном порядке.
-Полный синтаксис выглядит вот так:
+The app reads configuration from runtime environment variables only. It does not load `.env` files automatically.
 
-```@duneTTRPG_bot T nX cY dZ rV !```
+| Variable | Required | Description |
+| --- | --- | --- |
+| `TELEGRAM_BOT_TOKEN` | yes for bot runtime | Bot token from BotFather. |
+| `TELEGRAM_WEBHOOK_PATH_SECRET` | yes | Secret path segment for `/telegram/webhook/{secret}`. |
+| `TELEGRAM_WEBHOOK_SECRET_TOKEN` | recommended | Telegram `secret_token`, checked from `X-Telegram-Bot-Api-Secret-Token`. |
+| `PUBLIC_BASE_URL` | for webhook scripts | Public Vercel or tunnel URL without trailing slash. |
+| `SERVICE_VERSION` | no | Runtime version, default `0.1.0`. |
+| `LOG_LEVEL` | no | Default `INFO`. |
 
-  **T** - порог успеха\
-  **X** - число кубиков, если не указано, то будет 2\
-  **Y** - значение при котором засчитывается критический успех. По умолчанию 1.\
-  **Z** - сложность проверки, если указана, то бот скажет, прошел ли ты ее и сколько создал Импульса, если создал.\
-  **V** - Минималное число, при котором ты получишь затруднение. По умолчанию 20\
+See `.env.example` for a full template.
 
-Маленькие буквы n, c, d, r - это обязательные "флаги" перед соответствующими числовыми значениями.
+## Local Development
 
-Флаг "!" обозначает, что на бросок потрачено очко Решимости и один кубик сразу будет стоять на 1.
+Install dependencies:
 
-Примеры запросов:
+```powershell
+python -m pip install -e ".[dev]"
+```
 
-```@duneTTRPG_bot 14``` - бросок 2-х кубиков с порогом 14. Выведет только количество успехов.
+Run tests:
 
-```@duneTTRPG_bot 14 c5``` - бросок 2-х кубиков с порогом 14, с учетом специализаии криты будут на 5 и ниже. Выведет только количество успехов.
+```powershell
+python -m pytest
+```
 
-```@duneTTRPG_bot 13 n3 !``` - бросок 3-х кубиков с порогом 14. На бросок потрачено Очко Решимости, первый кубик автоматически будет стоять на 1 в результате.
+Run the API:
 
-```@duneTTRPG_bot 15 n4 c6 d3 r18 ! ``` - бросок 4-х кубиков с порогом 15, первый будет сразу стоять на 1. Криты будут засчитываться на 6 и меньше. Сложность броска 3, бот скажет, пройдена ли проверка и сколко создано Импульса, если создано. При этом затруднения возникают на результат 18 и выше.
+```powershell
+uvicorn app:app --reload
+```
 
-Так же ты всегда можешь получить справку по запросу ```@duneTTRPG_bot help```
+Health check:
 
-## ВАЖНОЕ!
+```powershell
+curl.exe --noproxy * http://127.0.0.1:8000/health
+```
 
-На данный момент корректность запроса с точки зрения игровой механики не проверяется! Так что будтье аккуратны при написании запроса. Ниже приведены ограничения, которых стоит придерживаться:
+## Webhook Testing
 
-1. Порог успеха (T) - может лежать в диапазоне от 8 до 16
+Telegram supports one active webhook per bot token. Switching between local and production means setting the webhook again.
 
-2. Число кубиков (X) - От 2 до 5. При оказании помощи может быть 1.
+For local testing:
 
-3. Порог критического успеха (Y) - от 1 до 8
+1. Start the app with `uvicorn app:app --reload`.
+2. Expose it with a tunnel such as ngrok or cloudflared.
+3. Set:
 
-4. Сложность проверки (Z) - от 0 до 5, если устанавливет ведущий. В рамках состязания может быть больше.
+```powershell
+$env:PUBLIC_BASE_URL="https://your-tunnel.example"
+$env:TELEGRAM_BOT_TOKEN="..."
+$env:TELEGRAM_WEBHOOK_PATH_SECRET="..."
+$env:TELEGRAM_WEBHOOK_SECRET_TOKEN="..."
+python scripts/set_webhook.py
+```
 
-5. Диапазон затруднений (V) - Бот использует именно минимальное значение на кубике, при котором появится затруднение. От 20 до 16
+Inspect current Telegram webhook:
 
-## Пример работы
+```powershell
+python scripts/get_webhook_info.py
+```
 
-После нажатия на вариант Roll в появившемся окне, где продублируется ваш запрос, бот отправит в чат от вашего имени сообщение, содержащее результат. Например, на запрос ```@duneTTRPG_bot 15 n4 c6 d3 r18 ! ``` результат может выглядеть так:
+## Vercel Deployment
 
---------------------------------------
-**Успехов: 6!**\
-**ПРОЙДЕНО!**\
-Создано Очков Импульса: 3
+The repository is ready for Vercel Git deployments:
 
-Порог: 15, Криты на: 6, Сложность: 3\
-Бросок: [1, 10, 15, 5]
+- root `app.py` exposes the ASGI app
+- `pyproject.toml` declares Python `>=3.12` and runtime dependencies
+- `vercel.json` excludes tests and caches from the function bundle
 
---------------------------------------
+In Vercel Project Settings, configure the Telegram environment variables. Production branch deploys become production deployments; other branches become preview deployments. After deploying the desired URL, set the Telegram webhook with `scripts/set_webhook.py`.
 
-## Случайные значения
+## Docker Import Check
 
-Бот использует Python библиотку random для генерации случайных чисел в диапазоне от 1 до 20 для определения результата каждого кубика
+```powershell
+docker compose up --build import-check
+```
 
-## Ссылки
+## Notes
 
-Бот в ТГ: https://t.me/duneTTRPG_bot
-
-Группа, где можно найти игроков, мастера или просто пообщаться на тему игры: https://t.me/DUNE_RPG
+- `src/app/services/dice_service.py` intentionally keeps the legacy loose parser and output spelling, including `treshold`.
+- Webhook registration is never done at import time.
+- PythonAnywhere proxy and absolute file paths were removed.

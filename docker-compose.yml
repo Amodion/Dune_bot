@@ -1,0 +1,11 @@
+services:
+  import-check:
+    build:
+      context: .
+      dockerfile: src/Dockerfile
+    image: dune-bot:local
+    container_name: dune-bot-import-check
+    command:
+      - python
+      - -c
+      - "import fastapi, pydantic, pydantic_settings, telegram; import app.main; print('imports: ok')"

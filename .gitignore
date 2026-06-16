@@ -1,2 +1,7 @@
-*.txt
 .env
+__pycache__/
+.pytest_cache/
+*.pyc
+logs/
+.vercel/
+*.egg-info/
