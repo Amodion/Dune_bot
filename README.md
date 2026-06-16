@@ -11,6 +11,7 @@ The old Flask/telebot PythonAnywhere app has been replaced with an async FastAPI
 - `/roll 15 n4 c6 d3 r18 !` rolls from text.
 - Inline mode still works: `@duneTTRPG_bot 15 n4 c6 d3 r18 !`.
 - Inline help still works: `@duneTTRPG_bot help`.
+- In group chats, `/roll` keyboards are visible to the group, but only the player who opened the menu can change or roll that menu.
 
 Legacy syntax:
 
@@ -35,7 +36,7 @@ The app reads configuration from runtime environment variables only. It does not
 | `TELEGRAM_WEBHOOK_PATH_SECRET` | yes | Secret path segment for `/telegram/webhook/{secret}`. |
 | `TELEGRAM_WEBHOOK_SECRET_TOKEN` | recommended | Telegram `secret_token`, checked from `X-Telegram-Bot-Api-Secret-Token`. |
 | `PUBLIC_BASE_URL` | for webhook scripts | Public Vercel or tunnel URL without trailing slash. |
-| `SERVICE_VERSION` | no | Runtime version, default `0.1.0`. |
+| `SERVICE_VERSION` | no | Runtime version, default `0.2.0`. |
 | `LOG_LEVEL` | no | Default `INFO`. |
 
 See `.env.example` for a full template.
@@ -109,5 +110,6 @@ docker compose up --build import-check
 ## Notes
 
 - `src/app/services/dice_service.py` intentionally keeps the legacy loose parser and output spelling, including `treshold`.
+- Telegram group keyboards cannot be made private once posted in a group. For private parameter building before posting to a group, the likely future upgrade is a Telegram Mini App that builds a roll query and returns the user to inline mode.
 - Webhook registration is never done at import time.
 - PythonAnywhere proxy and absolute file paths were removed.

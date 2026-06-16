@@ -7,6 +7,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from app.services.dice_service import RollParams, roll
 
 NO_DIFFICULTY = "-"
+OWNER_PREFIX = "u:"
 
 
 @dataclass(frozen=True)
@@ -91,24 +92,60 @@ def render_wizard_text(state: WizardState) -> str:
     )
 
 
-def _button(label: str, action: str, state: WizardState) -> InlineKeyboardButton:
-    return InlineKeyboardButton(label, callback_data=f"{action}|{state.to_callback_data()}")
+def owner_from_callback_data(data: str) -> int | None:
+    _action, _separator, payload = data.partition("|")
+    owner_data, separator, _state_data = payload.partition("|")
+    if not separator or not owner_data.startswith(OWNER_PREFIX):
+        return None
+    try:
+        return int(owner_data.removeprefix(OWNER_PREFIX))
+    except ValueError:
+        return None
 
 
-def build_roll_keyboard(state: WizardState) -> InlineKeyboardMarkup:
+def state_from_callback_payload(data: str) -> WizardState:
+    _action, _separator, payload = data.partition("|")
+    _owner_data, separator, state_data = payload.partition("|")
+    if separator:
+        return WizardState.from_callback_data(state_data)
+    return WizardState.from_callback_data(payload)
+
+
+def _button(label: str, action: str, state: WizardState, owner_user_id: int) -> InlineKeyboardButton:
+    callback_data = f"{action}|{OWNER_PREFIX}{owner_user_id}|{state.to_callback_data()}"
+    return InlineKeyboardButton(label, callback_data=callback_data)
+
+
+def build_roll_keyboard(state: WizardState, owner_user_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         [
-            [_button("Порог -", "t-", state), _button(f"Порог {state.treshold}", "noop", state), _button("Порог +", "t+", state)],
-            [_button("Кубики -", "n-", state), _button(f"Кубики {state.n_dices}", "noop", state), _button("Кубики +", "n+", state)],
-            [_button("Крит -", "c-", state), _button(f"Крит {state.crit_value}", "noop", state), _button("Крит +", "c+", state)],
             [
-                _button("Сложн. вкл/выкл", "dt", state),
-                _button(f"Сложн. {'-' if state.difficulty is None else state.difficulty}", "noop", state),
+                _button("Порог -", "t-", state, owner_user_id),
+                _button(f"Порог {state.treshold}", "noop", state, owner_user_id),
+                _button("Порог +", "t+", state, owner_user_id),
             ],
-            [_button("Сложн. -", "d-", state), _button("Сложн. +", "d+", state)],
-            [_button("Затр. -", "r-", state), _button(f"Затр. {state.complications_range}", "noop", state), _button("Затр. +", "r+", state)],
-            [_button(f"Решимость: {'да' if state.use_determination else 'нет'}", "det", state)],
-            [_button("Бросить", "roll", state)],
+            [
+                _button("Кубики -", "n-", state, owner_user_id),
+                _button(f"Кубики {state.n_dices}", "noop", state, owner_user_id),
+                _button("Кубики +", "n+", state, owner_user_id),
+            ],
+            [
+                _button("Крит -", "c-", state, owner_user_id),
+                _button(f"Крит {state.crit_value}", "noop", state, owner_user_id),
+                _button("Крит +", "c+", state, owner_user_id),
+            ],
+            [
+                _button("Сложн. вкл/выкл", "dt", state, owner_user_id),
+                _button(f"Сложн. {'-' if state.difficulty is None else state.difficulty}", "noop", state, owner_user_id),
+            ],
+            [_button("Сложн. -", "d-", state, owner_user_id), _button("Сложн. +", "d+", state, owner_user_id)],
+            [
+                _button("Затр. -", "r-", state, owner_user_id),
+                _button(f"Затр. {state.complications_range}", "noop", state, owner_user_id),
+                _button("Затр. +", "r+", state, owner_user_id),
+            ],
+            [_button(f"Решимость: {'да' if state.use_determination else 'нет'}", "det", state, owner_user_id)],
+            [_button("Бросить", "roll", state, owner_user_id)],
         ]
     )
 
@@ -157,4 +194,3 @@ def roll_wizard_state(state: WizardState) -> str:
         complications_range=params.complications_range,
         use_determination=params.use_determination,
     )
-

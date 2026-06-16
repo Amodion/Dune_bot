@@ -6,3 +6,4 @@ logs/
 .vercel/
 *.egg-info/
 notebooks/
+generated_avatars/

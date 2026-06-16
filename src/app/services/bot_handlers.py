@@ -11,8 +11,10 @@ from app.services.keyboard_service import (
     WizardState,
     apply_action,
     build_roll_keyboard,
+    owner_from_callback_data,
     render_wizard_text,
     roll_wizard_state,
+    state_from_callback_payload,
 )
 from app.utils.paths import read_static_text
 
@@ -32,6 +34,8 @@ async def start_or_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 async def roll_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_message is None:
         return
+    if update.effective_user is None:
+        return
     args = context.args
     if args:
         try:
@@ -47,7 +51,7 @@ async def roll_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     await update.effective_message.reply_text(
         render_wizard_text(state),
         parse_mode=ParseMode.MARKDOWN,
-        reply_markup=build_roll_keyboard(state),
+        reply_markup=build_roll_keyboard(state, update.effective_user.id),
     )
 
 
@@ -95,9 +99,14 @@ async def roll_keyboard_callback(update: Update, context: CallbackContext) -> No
     if query is None or query.data is None:
         return
 
+    owner_user_id = owner_from_callback_data(query.data)
+    if owner_user_id is not None and query.from_user.id != owner_user_id:
+        await query.answer("Это меню броска другого игрока.", show_alert=False)
+        return
+
     await query.answer()
     action, _, state_data = query.data.partition("|")
-    state = WizardState.from_callback_data(state_data)
+    state = state_from_callback_payload(query.data)
 
     if action == "roll":
         await query.edit_message_text(roll_wizard_state(state), parse_mode=ParseMode.MARKDOWN)
@@ -107,6 +116,5 @@ async def roll_keyboard_callback(update: Update, context: CallbackContext) -> No
     await query.edit_message_text(
         render_wizard_text(new_state),
         parse_mode=ParseMode.MARKDOWN,
-        reply_markup=build_roll_keyboard(new_state),
+        reply_markup=build_roll_keyboard(new_state, query.from_user.id),
     )
-

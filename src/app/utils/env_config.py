@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(case_sensitive=True, extra="ignore")
 
     SERVICE_NAME: str = "dune-bot"
-    SERVICE_VERSION: str = "0.1.0"
+    SERVICE_VERSION: str = "0.2.0"
     LOG_LEVEL: str = "INFO"
     LOG_FILE: str = "dune_bot.log"
     LOG_BACKUP_COUNT: int = 14
@@ -68,4 +68,3 @@ class Settings(BaseSettings):
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     return Settings()
-
